@@ -1,0 +1,7 @@
+name = "SIMParameterEstimation"
+uuid = "61c97261-f35b-43ea-8194-1e66bc876e0d"
+authors = ["Martin Kunz <martinkunz@email.cz> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
