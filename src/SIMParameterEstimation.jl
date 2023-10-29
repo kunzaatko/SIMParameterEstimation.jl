@@ -1,5 +1,5 @@
 module SIMParameterEstimation
 
-# Write your package code here.
+include("harmonic.jl")
 
 end
