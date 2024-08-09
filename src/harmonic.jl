@@ -9,12 +9,12 @@ using Distributed
 abstract type ParameterEstimator{IP<:IlluminationPattern} end
 const PE = ParameterEstimator
 
-include("harmonic/peak_frequency.jl")
-include("harmonic/autocorrelation_frequency.jl")
-include("harmonic/peak_phase_shift.jl")
-include("harmonic/cross_correlation_phase_shift.jl")
-include("harmonic/IP_cross_correlation_phase_offset.jl")
-include("harmonic/cross_correlation_modulation.jl")
+include("estimators/peak_frequency.jl")
+include("estimators/autocorrelation_frequency.jl")
+include("estimators/peak_phase_shift.jl")
+include("estimators/cross_correlation_phase_shift.jl")
+include("estimators/IP_cross_correlation_phase_offset.jl")
+include("estimators/cross_correlation_modulation.jl")
 
 export estimate
 
