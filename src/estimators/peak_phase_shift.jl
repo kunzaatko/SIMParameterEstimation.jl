@@ -1,6 +1,7 @@
 using FFTW, LinearAlgebra
 using TransferFunctions
 using TransferFunctions: otf_support
+
 struct PeakPhaseShift <: PE{Harmonic}
     "Minimum relative phase shift in terms of OTF support radius (∈ [0,1))"
     Δϕr_min::Real
@@ -26,4 +27,13 @@ function estimate(
     C[otf_support(tf, C, Δxy; ρ=alg.Δϕr_min)] .= 0 # Δϕ outside the OTF support would mean noise
 
     return argmax(centered(ifftshift(C))) |> Tuple
+end
+
+
+"""
+
+# Theory
+
+"""
+function autocorrelation_peak_estimate()
 end
