@@ -14,6 +14,7 @@ using Aqua
         @info "Skipping Aqua.jl quality tests. For a full run set `ENV[\"RUNTESTS_FULL\"]=true`."
     end
     @testset "utils.jl" begin
+        using LinearAlgebra
         using SIMParameterEstimation: mixin_matrix, separation_matrix, mixin_components, separate_components
         @test mixin_matrix((0.5, 0.8, 1.0)) isa Matrix{<:Complex}
         @test mixin_matrix(0.0, 3) == mixin_matrix((0.0, 2π / 3, 4π / 3))
@@ -32,5 +33,8 @@ using Aqua
         raw = mixin_components(comps, M)
         @test separate_components(raw, M_inv) == separate_components(raw[:, :, :], M_inv)
         @test comps ≈ separate_components(raw, M_inv)
+
+        @test separation_matrix((1., 2., 3.), (2., 2., 2.)) * transpose([1 1 1; exp(im) exp(2im) exp(3im); exp(-im) exp(-2im) exp(-3im)]) ≈ I(3)
+
     end
 end
