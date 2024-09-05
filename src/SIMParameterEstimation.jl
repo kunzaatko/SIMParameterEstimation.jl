@@ -29,6 +29,8 @@ include("xcorr.jl")
 
 include("estimators/frequency_shift/fair_sim.jl")
 
+include("base_overloads.jl")
+
 # export estimate
 
 end
