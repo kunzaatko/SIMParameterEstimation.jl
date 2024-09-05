@@ -39,6 +39,7 @@ end
 TrueOverlap(signal::AbstractArray{ST,N}, template::AbstractArray{TT,N}) where {ST,TT,N} = TrueOverlap(signal .!= zero(ST), template .!= zero(TT))
 
 struct Global{N} <: SummingSet{N} end
+Global(::AbstractArray{ST,N}, ::AbstractArray{TT,N}) where {ST,TT,N} = Global{N}()
 
 # TODO: `means!` without the count and `means` could be defined as a single method on the abstract types. A similar
 # thing can be done with `overlap_length` <15-08-24> 
@@ -57,6 +58,16 @@ function means!(
     counts = overlap_length(set.signal_win, set.template_win)
     return means!(signal_mean, template_mean, signal, template, counts, set)
 end
+
+
+means!(
+    signal_mean,
+    template_mean,
+    signal,
+    template,
+    counts,
+    set::Type{<:SummingSet}
+) = means!(signal_mean, template_mean, signal, template, counts, set(signal, template))
 
 function means!(
     signal_mean::AbstractArray,
@@ -80,8 +91,18 @@ function means!(
     return signal_mean, template_mean
 end
 
+means(signal::AbstractArray, template::AbstractArray, set::Type{<:SummingSet}) = means(signal, template, set(signal, template))
 means(signal::AbstractArray, template::AbstractArray, set::WindowOverlap) =
     means!(similar(signal), similar(signal), signal, template, set)
+
+energies!(
+    signal_energy,
+    template_energy,
+    signal,
+    template,
+    set::Type{<:SummingSet},
+    args...
+) = energies!(signal_energy, template_energy, signal, template, set(signal, template), args...)
 
 # FIX: This is repetition that can be avoided by using a sum function with the `set` argument. Then the `means!` and
 # `powers!` functions can be written using this function. <15-08-24> 
@@ -92,8 +113,8 @@ function energies!(
     template::AbstractArray{TT},
     set::WindowOverlap
 ) where {ST,TT}
-    signal_energy_p = padarray(ST, signal .^ 2, Fill(zero(ST), Base.Indices(set.template_win)))
-    template_energy_p = padarray(TT, template .^ 2, Fill(zero(TT), Base.Indices(set.signal_win)))
+    signal_energy_p = padarray(ST, signal .* conj(signal), Fill(zero(ST), Base.Indices(set.template_win)))
+    template_energy_p = padarray(TT, template .* conj(template), Fill(zero(TT), Base.Indices(set.signal_win)))
     signal_iA = IntegralArray(signal_energy_p)
     template_iA = IntegralArray(template_energy_p)
 
@@ -104,8 +125,9 @@ function energies!(
     return signal_energy, template_energy
 end
 
-energies(signal::AbstractArray, template::AbstractArray, set::WindowOverlap) =
-    energies!(similar(signal), similar(signal), signal, template, set)
+energies(signal::AbstractArray, template::AbstractArray, set::Type{<:SummingSet}) = energies(signal, template, set(signal, template))
+energies(signal::AbstractArray{ST}, template::AbstractArray{TT}, set::WindowOverlap) where {ST,TT} =
+    energies!(similar(signal, real(ST)), similar(signal, real(TT)), signal, template, set)
 
 # NOTE: There are quite large numerical errors that lead to the `Int` Fourier transform to give `InexactError`s. This is
 # not ideal but it should work correctly as the numerical errors are never as large to tip the rounding. <15-08-24> 
@@ -135,7 +157,7 @@ function means!(
     set::TrueOverlap
 ) where {ST,TT}
     imfilter!(signal_mean, signal, ST.(set.template_supp), Fill(zero(ST)))
-    imfilter!(template_mean, TT.(set.signal_supp), template, Fill(zero(TT)))
+    imfilter!(template_mean, TT.(set.signal_supp), conj(template), Fill(zero(TT)))
     @inbounds signal_mean ./= counts
     @inbounds template_mean ./= counts
     return signal_mean, template_mean
@@ -158,8 +180,8 @@ function energies!(
 ) where {ST,TT}
     # TODO: Test whether this template_supp doesn't have to be reflected before, i.e. whether this is the correlation
     # rather than convolution as it is supposed to be. <19-08-24> 
-    imfilter!(signal_energy, signal, set.template_supp, Fill(zero(ST)))
-    imfilter!(template_energy, TT.(set.signal_supp), template, Fill(zero(TT)))
+    imfilter!(signal_energy, real(signal .* conj(signal)), real(ST).(set.template_supp), Fill(zero(real(ST))))
+    imfilter!(template_energy, real(TT).(set.signal_supp), real(template .* conj(template)), Fill(zero(real(TT))))
     return signal_energy, template_energy
 end
 
@@ -176,8 +198,8 @@ function energies!(
 ) where {ST,TT}
     signal_supp_p = padarray(Bool, set.signal_supp, Fill(false, set.template_supp))
     template_supp_p = padarray(Bool, set.template_supp, Fill(false, set.signal_supp))
-    signal_energy_p = padarray(ST, signal .^ 2, Fill(zero(ST), set.template_supp))
-    template_energy_p = padarray(TT, template .^ 2, Fill(zero(ST), set.signal_supp))
+    signal_energy_p = padarray(real(ST), signal .* conj(signal), Fill(zero(ST), set.template_supp))
+    template_energy_p = padarray(real(TT), template .* conj(template), Fill(zero(ST), set.signal_supp))
     @inbounds @simd for uv in CartesianIndices(signal)
         signal_energy[uv] = sum(signal_energy_p[signal_supp_p.*ShiftedArray(template_supp_p, Tuple(uv); default=false)])
         template_energy[uv] = sum(template_energy_p[signal_supp_p.*ShiftedArray(template_supp_p, Tuple(-uv); default=false)])
@@ -187,8 +209,8 @@ end
 
 energies!(signal_energy::AbstractArray, template_energy::AbstractArray, signal::AbstractArray, template::AbstractArray, set::TrueOverlap) =
     energies!(signal_energy, template_energy, signal, template, set, Transform())
-energies(signal::AbstractArray, template::AbstractArray, set::TrueOverlap) =
-    energies!(similar(signal), similar(signal), signal, template, set)
+energies(signal::AbstractArray{ST}, template::AbstractArray{TT}, set::TrueOverlap) where {ST,TT} =
+    energies!(similar(signal, real(ST)), similar(signal, real(TT)), signal, template, set)
 
 overlap_length!(out::AbstractArray, ::Global) = fill!(out, length(out))
 function means!(
@@ -206,29 +228,48 @@ end
 # TODO: It doesn't make any sense to calculate the `xcorr` for shifts where there is no overlap <22-08-24> 
 # TODO: There should also be a `range` argument, which determines on which indices the cross-correlation is done. Even
 # better, there should be an indices/shifts argument that determines where to calculate the xcorr <10-08-24> 
+
+# NOTE: Step 1: Create the summing set for the demeaning and normalization
+xcorr!(
+    out::AbstractArray,
+    signal::AbstractArray,
+    template::AbstractArray,
+    normset::Type{<:SummingSet}=WindowOverlap;
+    vargs...
+) = xcorr!(out, signal, template, normset(signal, template); vargs...)
 function xcorr!(
     out::AbstractArray,
-    signal::AbstractArray{ST},
-    template::AbstractArray;
-    normset::SummingSet=TrueOverlap(signal, template)
-) where {ST}
+    signal::AbstractArray{ST,N},
+    template::AbstractArray{TT,N},
+    normset::SummingSet{N}
+) where {ST,TT,N}
+    # NOTE: Step 1: Throw when the signal is Real and the template is Complex  
+    ST <: Real && TT <: Complex && throw(ArgumentError("""
+    If signal is `Real`, template must also be `Real`.\nhint: If this is intensional and you want to perform complex\
+    cross-correlation, convert the signal to complex using `complex.(signal)`."""))
+
+    template = conj(template) # FIX: Is this a correct interpretation in the statistical sense?
+
     counts = overlap_length(normset)
     signal_mean, template_mean = means(signal, template, normset)
 
-    imfilter!(out, signal, template, Fill(zero(ST)))
+    # FIX: Is this the definition that I changed in the developed package? <02-09-24> 
+    imfilter!(out, signal, conj(template), Fill(zero(ST)))
     out .-= (counts .* signal_mean .* template_mean) # Demeaning
 
     signal_energy, template_energy = energies(signal, template, normset)
-    signal_denom, template_denom = signal_energy .- (counts .* signal_mean .^ 2), template_energy .- (counts .* template_mean .^ 2)
-    norm_factor!(signal_denom, signal_denom)
-    norm_factor!(template_denom, template_denom)
+
+    signal_denom = signal_energy .- (counts .* signal_mean .* conj(signal_mean))
+    template_denom = template_energy .- (counts .* template_mean .* conj(template_mean))
+
     denom = signal_denom .* template_denom
+    norm_factor!(denom, denom)
 
     out ./= denom # Normalization
     return out
 end
-xcorr(signal::AbstractArray, template::AbstractArray; vargs...) =
-    xcorr!(similar(signal), signal, template; vargs...)
+xcorr(signal::AbstractArray, template::AbstractArray, normset=WindowOverlap; vargs...) =
+    xcorr!(similar(signal), signal, template, normset; vargs...)
 
 function norm_factor!(out, denom::AbstractArray{ST}) where {ST<:Real}
     out .= sqrt.(denom)
@@ -236,7 +277,7 @@ function norm_factor!(out, denom::AbstractArray{ST}) where {ST<:Real}
 end
 function norm_factor!(out, denom::AbstractArray{ST}) where {ST<:Complex}
     # FIX: Is this correct? <22-08-24> 
-    out .= abs.(denom)
+    out .= sqrt.(denom)
     return out
 end
 
