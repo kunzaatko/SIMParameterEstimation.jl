@@ -27,6 +27,14 @@ include("xcorr.jl")
 # export IPCrossCorrelationPhaseOffset, IPCCPO
 # export CrossCorrelationModulation, CCM
 
+# TODO: The plan for this packages is to instead of creating a million types have an estimator type that holds the
+# parameter names that it estimates and "requirements" for the estimation (perhaps) preparation functions and the
+# symbolic name that I think of of the estimator. This means that I can create the estimator by a constructor that gets
+# the symbol and everything else is determined based on the functions that are overloaded on the symbol (using
+# `Val{:name}`). Then a reconstructions can be done by creating a sequence of estimators that are to be applied and then
+# maybe some preparation functions yet to be determined, how this will work. The parameters should be determined by some
+# type `SIMParams` or similar. <02-09-24> 
+
 include("estimators/frequency_shift/fair_sim.jl")
 
 include("base_overloads.jl")
