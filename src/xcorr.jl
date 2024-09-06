@@ -1,10 +1,9 @@
 using ImageFiltering: AbstractBorder, Fill, imfilter!, padarray
 using IntervalSets, IntegralArrays, Statistics, ShiftedArrays
 
-# TODO: I really need to make unit tests for this. Or I will end up fucking up the real cross-correlation while
-# implementing complex cross-correlation <22-08-24> 
-# TODO: raw correlation should really be called covariance when we demean the signal. Similarly the non-demeaned version
-# is the second moment <22-08-24> 
+# TODO: Add function Covariance `xcov` that does not normalize... This will be useful for the modulation determination
+# <06-09-24> 
+# TODO: When `xcov` is written, should make some figures to demonstrate why we need to normalize the signal in the supp... <06-09-24> 
 
 struct Window{N}
     inds::CartesianIndices{N}
@@ -113,8 +112,8 @@ function energies!(
     template::AbstractArray{TT},
     set::WindowOverlap
 ) where {ST,TT}
-    signal_energy_p = padarray(ST, signal .* conj(signal), Fill(zero(ST), Base.Indices(set.template_win)))
-    template_energy_p = padarray(TT, template .* conj(template), Fill(zero(TT), Base.Indices(set.signal_win)))
+    signal_energy_p = padarray(real(ST), signal .* conj(signal), Fill(zero(real(ST)), Base.Indices(set.template_win)))
+    template_energy_p = padarray(real(TT), template .* conj(template), Fill(zero(real(TT)), Base.Indices(set.signal_win)))
     signal_iA = IntegralArray(signal_energy_p)
     template_iA = IntegralArray(template_energy_p)
 
@@ -136,7 +135,6 @@ overlap_length(A_supp::AbstractArray{Bool}, B_supp::AbstractArray{Bool}) = overl
 overlap_length!(out::AbstractArray, set::TrueOverlap) = overlap_length!(out, set.signal_supp, set.template_supp)
 overlap_length(set::TrueOverlap) = overlap_length!(similar(set.signal_supp, Float32), set)
 
-# FIX: Should this return the mean of the adjoint array? <21-08-24> 
 function means!(
     signal_mean::AbstractArray,
     template_mean::AbstractArray,
@@ -225,7 +223,10 @@ function means!(
     return signal_mean, template_mean
 end
 
-# TODO: It doesn't make any sense to calculate the `xcorr` for shifts where there is no overlap <22-08-24> 
+# TODO: There should be an argument min_overlap such that it gives the user an option to set to `missing` if the value
+# were to be too untrustworthy <02-09-24> 
+# TODO: It doesn't make any sense to calculate the `xcorr` for shifts where there is no overlap. These should instead be
+# set to missing... <22-08-24> 
 # TODO: There should also be a `range` argument, which determines on which indices the cross-correlation is done. Even
 # better, there should be an indices/shifts argument that determines where to calculate the xcorr <10-08-24> 
 
@@ -241,7 +242,9 @@ function xcorr!(
     out::AbstractArray,
     signal::AbstractArray{ST,N},
     template::AbstractArray{TT,N},
-    normset::SummingSet{N}
+    normset::SummingSet{N};
+    variance_eps=max(eps(real(ST)), eps(real(TT))),
+    deviation_eps=sqrt(variance_eps) # TODO: Document this <06-09-24> 
 ) where {ST,TT,N}
     # NOTE: Step 1: Throw when the signal is Real and the template is Complex  
     ST <: Real && TT <: Complex && throw(ArgumentError("""
@@ -259,26 +262,38 @@ function xcorr!(
 
     signal_energy, template_energy = energies(signal, template, normset)
 
-    signal_denom = signal_energy .- (counts .* signal_mean .* conj(signal_mean))
-    template_denom = template_energy .- (counts .* template_mean .* conj(template_mean))
+    # TODO: Should be compacted... Possibly by defining a function to do this <06-09-24> 
+    # PERF: If the count is 1, then we already know that the input is constant and the energy of the demeaned input will
+    # be 0 <06-09-24> 
+    # NOTE: Passes some numerical instabilities of the means algorithms leading to negative energies and therefore
+    # errors for the square root <06-09-24> 
+    # NOTE: Explicit call of `real` ensures that the denominator is a `AbstractArray{<:Real}` <06-09-24> 
+    signal_denom = map(counts, signal_energy, signal_mean) do c, e, m
+        sd = c > 1 ? e - (c * real(m * conj(m))) : zero(real(ST))
+        sd > deviation_eps ? sd : zero(real(ST))
+    end
+    template_denom = map(counts, template_energy, template_mean) do c, e, m
+        td = c > 1 ? e - (c * real(m * conj(m))) : zero(real(TT))
+        td > deviation_eps ? td : zero(real(TT))
+    end
 
-    denom = signal_denom .* template_denom
-    norm_factor!(denom, denom)
+    denom = sqrt.(signal_denom .* template_denom)
 
-    out ./= denom # Normalization
+    # TODO: This should be put into separate function and tested probably <06-09-24> 
+    # Normalization
+    out = map(out, denom, counts, signal_mean, template_mean) do o, d, c, sm, tm
+        if d > deviation_eps  # non-constant signal
+            o / d
+        elseif c > 0 # constant signal but valid overlap, `sm` and `tm` are the constant signal values
+            # TODO: Does this make sense for complex signals? Should be documented anyhow <06-09-24> 
+            sign(sm * tm)
+        else # no overlap
+            missing # TODO: This must be documented <06-09-24> 
+        end
+    end
     return out
 end
 xcorr(signal::AbstractArray, template::AbstractArray, normset=WindowOverlap; vargs...) =
     xcorr!(similar(signal), signal, template, normset; vargs...)
-
-function norm_factor!(out, denom::AbstractArray{ST}) where {ST<:Real}
-    out .= sqrt.(denom)
-    return out
-end
-function norm_factor!(out, denom::AbstractArray{ST}) where {ST<:Complex}
-    # FIX: Is this correct? <22-08-24> 
-    out .= sqrt.(denom)
-    return out
-end
 
 include("xcorr_docs.jl")
