@@ -12,7 +12,6 @@ abstract type ParameterEstimator{IP<:IlluminationPattern} end
 const PE = ParameterEstimator
 
 include("utils.jl")
-include("xcorr.jl")
 # include("estimators/peak_frequency.jl")
 # include("estimators/autocorrelation_frequency.jl")
 # include("estimators/peak_phase_shift.jl")

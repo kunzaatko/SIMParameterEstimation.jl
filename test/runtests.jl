@@ -1,3 +1,5 @@
+# TODO: Add performance regression tests <06-09-24> https://docs.juliahub.com/General/RegressionTests/stable/,
+# https://juliaci.github.io/BenchmarkTools.jl/dev/manual/
 using SIMParameterEstimation
 using Test
 using Aqua
