@@ -2,7 +2,6 @@ module SIMParameterEstimation
 
 using SIMIlluminationPatterns
 using SIMIlluminationPatterns: IlluminationPattern
-using IterTools
 # using SIMIlluminationPatterns.IlluminationPatterns: ParameterEstimator, PE
 # using StructuredIlluminationMicroscopy.Utils
 

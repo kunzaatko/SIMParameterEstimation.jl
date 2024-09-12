@@ -31,7 +31,7 @@ function mixin_components(f_imgs::AbstractArray{<:Number,3}, M::AbstractMatrix{<
     nphases = size(M, 1)
     @assert mod(size(f_imgs, 3), nphases) == 0 """The number of images supplied must be a multiple of the number of phases.
     The complete stack of images should be of `size(f_imgs, 3)` == `norientations`×`nphases`"""
-    comps = stack(IterTools.partition(eachslice(f_imgs, dims=3), nphases, nphases)) do single_orientation
+    comps = stack(Iterators.partition(eachslice(f_imgs, dims=3), nphases)) do single_orientation
         stack(row -> sum(single_orientation .* row), eachrow(M))
     end
     return comps
@@ -46,7 +46,7 @@ function separate_components(f_imgs::AbstractArray{<:Number,3}, M_inv::AbstractM
     nphases = size(M_inv, 1)
     @assert mod(size(f_imgs, 3), nphases) == 0 """The number of images supplied must be a multiple of the number of phases.
     The complete stack of images should be of `size(f_imgs, 3)` == `norientations`×`nphases`"""
-    comps = stack(IterTools.partition(eachslice(f_imgs, dims=3), nphases, nphases)) do single_orientation
+    comps = stack(Iterators.partition(eachslice(f_imgs, dims=3), nphases)) do single_orientation
         stack(row -> sum(single_orientation .* row), eachrow(M_inv))
     end
     return comps
