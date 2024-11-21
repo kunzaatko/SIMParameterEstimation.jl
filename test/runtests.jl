@@ -1,8 +1,7 @@
 # TODO: Add performance regression tests <06-09-24> https://docs.juliahub.com/General/RegressionTests/stable/,
 # https://juliaci.github.io/BenchmarkTools.jl/dev/manual/
 using SIMParameterEstimation
-using Test
-using Aqua
+using Test, Documenter, Aqua
 
 include("helpers.jl")
 
@@ -11,14 +10,24 @@ include("helpers.jl")
         @testset "Code quality (Aqua.jl)" begin
             Aqua.test_all(
                 SIMParameterEstimation;
-                ambiguities=(; exclude=VERSION >= v"1.11" ? [checkindex, checkbounds] : []),
+                ambiguities=false,
                 unbound_args=(; broken=true)
             )
         end
     else
         @info "Skipping Aqua.jl quality tests. For a full run set `ENV[\"RUNTESTS_FULL\"]=true`."
     end
+    if !haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "RUNNER_OS") && ENV["RUNNER_OS"] == "Linux"
+        @testset "DocTests" begin
+            # NOTE: Better than doc-testing in `make.jl` because, I can track the coverage
+            DocMeta.setdocmeta!(SIMParameterEstimation, :DocTestSetup, :(using SIMParameterEstimation); recursive=true)
+            doctest(SIMParameterEstimation)
+        end
+    end
 
+    @testset "Ambiguities" begin
+        @test length(Test.detect_ambiguities(SIMParameterEstimation)) == 0
+    end
     @testset_skip "Passes... Testing other" "utils.jl" begin
         # @testset "utils.jl" begin
         using LinearAlgebra
