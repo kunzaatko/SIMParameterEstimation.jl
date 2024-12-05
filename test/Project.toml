@@ -1,5 +1,6 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
 IntegralArrays = "1d092043-8f09-5a30-832f-7509e371ab51"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

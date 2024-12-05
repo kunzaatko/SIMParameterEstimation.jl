@@ -24,7 +24,7 @@ function estimate(
     intersection = support_intersect(tf, Δϕ, size(fft_lr_1), Δxy; MTF_min=alg.MTF_min)
 
     fft_lr_1_i = zeros(eltype(fft_lr_1), size(fft_lr_1)) # at intersection
-    fft_lr_1_i[intersection] = fft_lr_1[intersection] ./ otf_lr_1[intersection]
+    fft_lr_1_i[intersection] = fft_lr_2[intersection] ./ otf_lr_1[intersection]
 
     fft_lr_2_sΔϕ = shift(fft_lr_2, -1 .* Δϕ) # shifted by -Δϕ (fourier shift theorem)
     fft_lr_2_i = zeros(eltype(fft_lr_2), size(fft_lr_2))
