@@ -11,7 +11,7 @@ include("helpers.jl")
             Aqua.test_all(
                 SIMParameterEstimation;
                 ambiguities=false,
-                unbound_args=(; broken=true)
+                unbound_args=(; broken=false)
             )
         end
     else
