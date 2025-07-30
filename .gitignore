@@ -11,3 +11,5 @@ deps/src/
 deps/usr/
 docs/build/
 docs/site/
+data
+notebooks/

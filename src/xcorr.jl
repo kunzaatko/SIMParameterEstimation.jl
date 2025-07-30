@@ -5,6 +5,58 @@ using IntervalSets, IntegralArrays, Statistics, ShiftedArrays
 # <06-09-24> 
 # TODO: When `xcov` is written, should make some figures to demonstrate why we need to normalize the signal in the supp... <06-09-24> 
 
+
+"""
+    Window(arr::AbstractArray)
+
+Window of indices of the array `arr`, representing a Cartesian product of the contained index intervals. 
+
+Useful for computing the overlap of two signals during cross-correlation.
+
+
+``````jldoctest xcorr; setup = :(using OffsetArrays; using SIMParameterEstimation: Window)
+julia> signal = [0 0 0 0 0 0 0 0 0;
+                 0 0 0 1 1 1 0 0 0;
+                 0 0 1 1 1 1 1 0 0;
+                 0 1 1 1 1 1 1 1 0;
+                 0 1 1 1 1 1 1 1 0;
+                 0 0 1 1 1 1 1 0 0;
+                 0 0 0 1 1 1 0 0 0;
+                 0 0 0 0 0 0 0 0 0];
+
+julia> signal = OffsetArrays.Origin(-4,-4)(signal)
+8×9 OffsetArray(::Matrix{Int64}, -4:3, -4:4) with eltype Int64 with indices -4:3×-4:4:
+ 0  0  0  0  0  0  0  0  0
+ 0  0  0  1  1  1  0  0  0
+ 0  0  1  1  1  1  1  0  0
+ 0  1  1  1  1  1  1  1  0
+ 0  1  1  1  1  1  1  1  0
+ 0  0  1  1  1  1  1  0  0
+ 0  0  0  1  1  1  0  0  0
+ 0  0  0  0  0  0  0  0  0
+
+julia> w_signal = Window(signal)
+Window{2}(CartesianIndices((OffsetArrays.IdOffsetRange(values=-4:3, indices=-4:3), OffsetArrays.IdOffsetRange(values=-4:4, indices=-4:4))))
+
+julia> template = [0 1 0;
+                   1 1 1;
+                   0 1 0];
+
+julia> template = OffsetArrays.centered(template)
+3×3 OffsetArray(::Matrix{Int64}, -1:1, -1:1) with eltype Int64 with indices -1:1×-1:1:
+ 0  1  0
+ 1  1  1
+ 0  1  0
+
+julia> w_template = Window(template)
+Window{2}(CartesianIndices((OffsetArrays.IdOffsetRange(values=-1:1, indices=-1:1), OffsetArrays.IdOffsetRange(values=-1:1, indices=-1:1))))
+
+julia> @assert length(w_template) == 9
+
+julia> intersect(w_signal, w_template .+ CartesianIndex((3, 3)))
+Window{2}(CartesianIndices((2:3, 2:4)))
+```
+"""
 struct Window{N}
     inds::CartesianIndices{N}
 end
@@ -90,6 +142,16 @@ function means!(
     return signal_mean, template_mean
 end
 
+"""
+    mean!(out::AbstractArray, A::AbstractArray, set::SummingSet)
+
+Compute the mean of array `A` for each shift  with the specified `set` that depends on the
+template for the cross-correlation.
+
+__Warning__: When the template does not contain the origin (`CartesianIndex(0,...)`) in 
+    its axes, it may return `NaN`s wherever the shifted template does not overlap with 
+    the signal.
+"""
 means(signal::AbstractArray, template::AbstractArray, set::Type{<:SummingSet}) = means(signal, template, set(signal, template))
 means(signal::AbstractArray, template::AbstractArray, set::WindowOverlap) =
     means!(similar(signal), similar(signal), signal, template, set)
@@ -295,5 +357,3 @@ function xcorr!(
 end
 xcorr(signal::AbstractArray, template::AbstractArray, normset=WindowOverlap; vargs...) =
     xcorr!(similar(signal), signal, template, normset; vargs...)
-
-include("xcorr_docs.jl")

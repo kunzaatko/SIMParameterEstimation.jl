@@ -1,16 +1,16 @@
 module SIMParameterEstimation
 
+# TODO: For the storage of parameter estimates, this should use ImageMeta type and the properties should be described. When some other illumination parameter is necessary for the estimation, it should check for its existence in the properties Dict. <01-03-25> 
+
 using SIMIlluminationPatterns
 using SIMIlluminationPatterns: IlluminationPattern
-# using SIMIlluminationPatterns.IlluminationPatterns: ParameterEstimator, PE
-# using StructuredIlluminationMicroscopy.Utils
 
 using Distributed
 
 abstract type ParameterEstimator{IP<:IlluminationPattern} end
 const PE = ParameterEstimator
 
-include("utils.jl")
+include("xcorr.jl")
 # include("estimators/peak_frequency.jl")
 # include("estimators/autocorrelation_frequency.jl")
 # include("estimators/peak_phase_shift.jl")
@@ -33,7 +33,7 @@ include("utils.jl")
 # maybe some preparation functions yet to be determined, how this will work. The parameters should be determined by some
 # type `SIMParams` or similar. <02-09-24> 
 
-include("estimators/frequency_shift/fair_sim.jl")
+# include("estimators/frequency_shift/fair_sim.jl")
 
 include("base_overloads.jl")
 
