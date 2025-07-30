@@ -1,7 +1,9 @@
 using SIMParameterEstimation
 using Documenter
 
-DocMeta.setdocmeta!(SIMParameterEstimation, :DocTestSetup, :(using SIMParameterEstimation); recursive=true)
+DocMeta.setdocmeta!(SIMParameterEstimation, :DocTestSetup, :(
+        include(joinpath(@__DIR__, "../test/doctestsetup.jl"))
+    ); recursive=true)
 
 makedocs(;
     modules=[SIMParameterEstimation],
@@ -16,6 +18,9 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Utilities" => [
+            "Cross Correlation" => "cross-correlation.md",
+        ]
     ],
 )
 
