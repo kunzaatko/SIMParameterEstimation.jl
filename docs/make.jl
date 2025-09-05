@@ -8,7 +8,7 @@ DocMeta.setdocmeta!(SIMParameterEstimation, :DocTestSetup, :(
 makedocs(;
     modules=[SIMParameterEstimation],
     authors="Martin Kunz <martinkunz@email.cz> and contributors",
-    repo="https://github.com/kunzaatko/SIMParameterEstimation.jl/blob/{commit}{path}#{line}",
+    repo=Remotes.GitHub("kunzaatko","SIMParameterEstimation.jl"),
     sitename="SIMParameterEstimation.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",

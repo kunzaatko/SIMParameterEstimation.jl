@@ -2,11 +2,7 @@
 CurrentModule = SIMParameterEstimation
 ```
 
-<!-- ```@docs -->
-<!-- Window -->
-<!-- mean! -->
-<!-- ``` -->
-<!---->
-<!-- ```@docs -->
-<!-- separation_matrix -->
-<!-- ``` -->
+```@docs
+Window
+means!
+```
