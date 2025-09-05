@@ -14,7 +14,7 @@ Window of indices of the array `arr`, representing a Cartesian product of the co
 Useful for computing the overlap of two signals during cross-correlation.
 
 
-``````jldoctest xcorr; setup = :(using OffsetArrays; using SIMParameterEstimation: Window)
+```jldoctest xcorr
 julia> signal = [0 0 0 0 0 0 0 0 0;
                  0 0 0 1 1 1 0 0 0;
                  0 0 1 1 1 1 1 0 0;
@@ -24,7 +24,7 @@ julia> signal = [0 0 0 0 0 0 0 0 0;
                  0 0 0 1 1 1 0 0 0;
                  0 0 0 0 0 0 0 0 0];
 
-julia> signal = OffsetArrays.Origin(-4,-4)(signal)
+julia> signal = OAs.Origin(-4,-4)(signal)
 8×9 OffsetArray(::Matrix{Int64}, -4:3, -4:4) with eltype Int64 with indices -4:3×-4:4:
  0  0  0  0  0  0  0  0  0
  0  0  0  1  1  1  0  0  0
@@ -35,7 +35,7 @@ julia> signal = OffsetArrays.Origin(-4,-4)(signal)
  0  0  0  1  1  1  0  0  0
  0  0  0  0  0  0  0  0  0
 
-julia> w_signal = Window(signal)
+julia> w_signal = SIM_PE.Window(signal)
 Window{2}(CartesianIndices((OffsetArrays.IdOffsetRange(values=-4:3, indices=-4:3), OffsetArrays.IdOffsetRange(values=-4:4, indices=-4:4))))
 
 julia> template = [0 1 0;
